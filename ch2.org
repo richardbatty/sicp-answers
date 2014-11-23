@@ -1,0 +1,388 @@
+
+* Chapter 2
+* Rational Numbers
+
+(define (make-rat n d)
+  (let ((greatest-divisor (gcd n d))
+        (sign (sign-of-rat n d)))
+  (cons (* sign (abs (/ n greatest-divisor)))
+        (abs (/ d greatest-divisor)))))
+
+(define (numer x) (car x))
+
+(define (denom x) (cdr x))
+
+(define (print-rat x)
+  (newline)
+  (display (numer x))
+  (display "/")
+  (display (denom x)))
+
+(define (add-rat x y)
+  (make-rat (+ (* (numer x) (denom y))
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+
+(define (sub-rat x y)
+  (make-rat (- (* (numer x) (denom y))
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+
+(define (mul-rat x y)
+  (make-rat (* (numer x) (numer y))
+            (* (denom x) (denom y))))
+
+(define (div-rat x y)
+  (make-rat (* (numer x) (denom y))
+            (* (denom x) (numer y))))
+
+(define (equal-rat? x y)
+  (= (* (numer x) (denom y))
+     (* (numer y) (denom x))))
+
+(define (sign-of-rat n d)
+  (/ (/ n (abs n)) (/ d (abs d))))
+
+* Exercise 2.1
+(define (make-rat n d)
+  (let ((greatest-divisor (gcd n d))
+        (sign (sign-of-rat n d)))
+  (cons (* sign (abs (/ n greatest-divisor)))
+        (abs (/ d greatest-divisor)))))
+
+;Bill the lizard did it by checking if the denominator was less than zero and then timesing the numerator
+;by -1 if it was.
+* Exercise 2.2
+(define (print-point p)
+  (newline)
+  (display "(")
+  (display (x-coordinate p))
+  (display ",")
+  (display (y-coordinate p))
+  (display ")"))
+
+(define (make-point x y)
+  (cons x y))
+
+(define (x-coordinate point)
+  (car point))
+
+(define (y-coordinate point)
+  (cdr point))
+
+(define (make-segment start end)
+  (cons start end))
+
+(define (start-point segment)
+  (car segment))
+
+(define (end-point segment)
+  (cdr segment))
+  
+(define (midpoint-segment segment)
+  (let ((start (start-point segment))
+        (end (end-point segment)))
+    (make-point (/ (+ (x-coordinate start) (x-coordinate end))
+                   2)
+                (/ (+ (y-coordinate start) (y-coordinate end))
+                   2))))
+
+(print-point (midpoint-segment (make-segment (make-point 6.4 3)
+                                             (make-point -10.7 4))))
+
+;Similar to Bill the Lizard's solution
+
+* Exercise 2.3
+;Common functionality:
+
+(define (nth-element n list)
+  (if (= n 0)
+      (car list)
+      (nth-element (- n 1) (cdr list))))
+
+(define (length segment)
+  (let ((x1 (x-coordinate (start-point segment)))
+        (y1 (y-coordinate (start-point segment)))
+        (x2 (x-coordinate (end-point segment)))
+        (y2 (y-coordinate (end-point segment))))
+    (sqrt (+ (square (- x2 x1))
+             (square (- y2 y1))))))
+
+(define (find-perimeter rectangle)
+  (+ (length (rectangle-segment 0 rectangle))
+      (length (rectangle-segment 1 rectangle))
+      (length (rectangle-segment 2 rectangle))
+      (length (rectangle-segment 3 rectangle))))
+  
+(define (find-area rectangle)
+  (* (length (rectangle-segment 0 rectangle))
+     (length (rectangle-segment 1 rectangle))))
+
+
+;Rectangle as a list of segments
+(define (make-rectangle top right bottom left)
+  (cons top (cons right (cons bottom (cons left ())))))
+
+(define (rectangle-segment n rectangle)
+  (nth-element n rectangle))
+
+(define my-rect (let ((top-left (make-point 0 1))
+                      (top-right (make-point 1 1))
+                      (bottom-left (make-point 0 0))
+                      (bottom-right (make-point 1 0)))
+                  (make-rectangle (make-segment top-left top-right)
+                                   (make-segment top-right bottom-right)
+                                   (make-segment bottom-right bottom-left)
+                                   (make-segment bottom-left top-left))))
+
+(find-perimeter my-rect)
+(find-area my-rect)
+
+
+;Rectangle as a list of points
+
+(define (make-rectangle-points top-left top-right bottom-left bottom-right)
+  (cons top-left (cons top-right (cons bottom-left (cons bottom-right ())))))
+  
+(define (rectangle-segment n rectangle)
+  (make-segment (nth-element (modulo n 4) rectangle)
+                (nth-element (modulo (+ n 1) 4) rectangle)))
+
+(define my-rect-alt (let ((top-left (make-point 0 1))
+                      (top-right (make-point 1 1))
+                      (bottom-left (make-point 0 0))
+                      (bottom-right (make-point 1 0)))
+                  (make-rectangle-points top-left top-right bottom-right bottom-left)))
+
+(find-perimeter my-rect-alt)
+(find-area my-rect-alt)
+
+;Bill the lizard used two simpler representations - one as storing the two opposite corners,
+;other one was storing one corner and a height and width. This led to slightly simpler code than mine.
+;When he changed abstraction, he, like me, had to redefine both his rectangle abstraction layer and
+;the abstraction layer above, which for him was rect-width and rect-height.
+
+* Abstraction barriers:
+Operations on rectangles such as area and perimeter. These require a rectangle-segment selector to get
+at the segments.
+Operations for getting a rectangle's segments
+Rectangles as lists of segments OR rectangles as lists of points (different constructors)
+Segments as pairs of points
+Points as pairs
+
+* Notes on abstraction barriers
+There's an interesting issue here: operations on rectangles need to access the rectangle's
+segments. Operations on segments need to access the segment's points, operations on points
+need to access the point's two values.
+Similarly, in the rational number arithmetic of this section's example, add-rat and sub-rat
+need to access the numerators and denominators. numer and denom need to access the
+underlying pair representation of rational numbers.
+
+In an object oriented system, this wouldn't be the case because you'd just ask the object
+rectangle for its area, or the segments for their length, or the rational number
+for it's numerator or denominator.
+Wait a minute, not all of these are the same:
+Area and length are calculations about a rectangle or a segment. Asking for the numerator
+or denominator of a rational number is sort of asking about its representation, but
+without having to know that they are stored as pairs.
+
+So I guess you have three ways of doing this:
+1. Functions that operate on objects access the object's representation directly to get
+at it's parts. So the area function get's the rectangle's segments by caring and cdring
+because it knows that the rectangle is represented as a list of segments.
+2. Functions that operate on objects access the parts of the object (or info about it)
+by asking for that info through an interface. So an area function could ask for
+a rectangle's segments but doesn't have to know whether the rectangle is a list of segments
+or a hash of segments or a random segment generator.
+3. Objects hold their own functions that are able to tell others about themselges, e.g.
+about their area etc.
+
+It seems that 2 is most desirable because it doesn't require things that operate on an
+object to know about their internal representation (like in 1) but also doesn't require
+the object to know all sorts of operations on itself that aren't it's responsibility
+(like in 3).
+
+(find-perimeter my-rect)
+(find-area my-rect)
+(polygon-segment 2 my-rect)
+(car (cdr (cdr (cdr my-rect))))
+
+(cdr '(((2 8) 5 5) ((5 8) 5 5) ((5 5) 2 6) ((2 6) 2 8)))
+(let ((x 1)) (+ x x))
+
+* Section 2.1.3 What is meant by data?
+(define (my-cons x y)
+  (define (dispatch m)
+    (cond ((= m 0) x)
+          ((= m 1) y)
+          (else (error "Argument not 0 or 1 -- CONS" m))))
+    dispatch)
+
+(define (my-car z) (z 0))
+
+(define (my-cdr z) (z 1))
+
+(define l (my-cons 1 '(2 3 4)))
+  
+(cdr l)
+
+* Exercise 2.4
+(define (other-cons x y)
+  (lambda (m) (m x y)))
+
+(define (other-car z)
+  (z (lambda (p q) p)))
+
+(define (other-cdr z)
+  (z (lambda (p q) q)))
+
+(other-car (other-cons 1 2))
+(other-cdr (other-cons 4 6))
+
+;Verify (car (cons x y)) yields x for any x and y
+(other-car (cons x y))
+((cons x y) (lambda (p q) p))
+((lambda (m) (m x y)) (lambda (p q) p))
+((lambda (p q) p) x y)
+(x)
+
+;Correc according to mr lizard both for the definition of other-cdr and the expansion
+
+* Exercise 2.5
+(define (arith-cons a b)
+  (* (expt 2 a)
+     (expt 3 b)))
+
+(define (find-exponent base product)
+  (define (find-it product counter)
+    (if (= (remainder product base) 0)
+        (find-it (/ product base) (+ counter 1))
+        counter))
+  (find-it product 0))
+
+(define (arith-car z)
+  (find-exponent 2 z))
+
+(define (arith-cdr z)
+  (find-exponent 3 z))
+
+(arith-car (arith-cons 100 2))
+(arith-cdr (arith-cons 32 47))
+
+;This is insane!
+
+;Correct according to Mr Lizard
+* Exercise 2.6 - COME BACK TO THIS
+(define zero (lambda (f) (lambda (x) x)))
+
+(define (add-1 n)
+  (lambda (f) (lambda (x) (f ((n f) x)))))
+
+Why does add-1 work?
+
+Well, you give it your function n.
+n does something with f to create a function that operates on x. (n f)
+This then operates on x. ((n f) x)
+Then f operates on the result of that. (f ((n f) x))
+
+
+(define one
+  (lambda (f)
+    (lambda (x)
+      (f (((lambda (f) (lambda (x) x)) f)
+          x)))))
+
+Simplify:
+(define one
+  (lambda (f)
+    (lambda (x)
+      (f x))))
+
+(define two
+  (lambda (f)
+    (lambda (x)
+      (f (f x)))))
+
+(define (plus n number-to-add)
+  (define (apply f x number)
+    (if (= 0 number)
+        (f x)
+        (f (apply f x (- number 1)))))
+  (lambda (f)
+    (lambda (x)
+      (apply f x number-to-add))))
+NO! this is wrong! you are meant to be adding church numerals, not adding church numerals
+to normal numerals
+
+;From bill the lizartd, the answer is:
+(define (add-church m n)
+  (lambda (f) (lambda (x) ((m f) ((n f) x)))))
+
+
+(define (inc n)
+  (+ n 1))
+
+* 2.1.4 Extended Exercise: Interval Arithmetic
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y))
+                 (+ (upper-bound x) (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+        
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval (/ 1.0 (upper-bound y))
+                               (/ 1.0 (lower-bound y)))))
+
+(define (make-interval a b) (cons a b))
+
+* Exercise 2.7
+
+(define (lower-bound interval) (car interval))
+(define (upper-bound interval) (cdr interval))
+
+(div-interval (make-interval 2 10)
+              (make-interval 3 20))
+;Correct
+* Exercise 2.8
+
+(define (sub-interval x y)
+  (make-interval (- (lower-bound x) (upper-bound y))
+                 (- (upper-bound x) (lower-bound y))))
+;Correct
+
+* Exercise 2.9
+Examples:
+(mul-interval (make-interval -2 30) (make-interval 8 20))
+
+(define (addition-width x y)
+  (- (+ (lower-bound x) (lower-bound y))
+     (+ (upper-bound x) (upper-bound y))))
+
+(define (addition-width x y)
+  (- (max (upper-bound x) (upper-bound y))
+     (min (lower-bound x) (lower-bound y))))
+
+(define (sub-width x y)
+  (- (- (lower-bound x) (upper-bound y))
+     (- (upper-bound x) (lower-bound y))))
+
+(define (mul-width
+        
+
+* Exercise 2.10
+
+
+* Timings
+10 hours 27th Oct - 2nd Nov
+10 hours 3rd Nov - 9th Nov
+10 hours minutes 10th Nov - 16th Nov
+1.5 hours 17th Nov -
+
+

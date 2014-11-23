@@ -1,0 +1,275 @@
+* Declarative knowledge(what is) vs imperative knowledge (how to)
+e.g. definition of square root vs method for finding square root
+
+** What is a process?
+Like a magical spirit.
+A pattern of rules called a procedure directs the process.
+Procedures are the spells that control the magical spririts that are the processes.
+We need a magical language for our spells - LISP
+
+Like chess, it's easy to learn the rules of lisp. But like chess, just knowing the rules
+isn't enough. The hard thing is to know the implications of the rules.
+
+The real problems of computer science are not things like how to do square roots, but building
+really large systems.
+
+We can build large systems because there are tequniques for controlling the complexity of large
+systems. This is what this course is about and what computer science is about.
+
+But this is a bit weird, becuase other people who aren't computer scientists also have to deal with
+immense complexity - e.g. aeronautical engineers building a 747.
+
+But what's different about compsci is that it isn't real. Mechanical engineers have to deal with
+issues like materials, noise amplification, etc. These physical constraints prevent certain
+systems from being built. But with computer science we use idealised components. So in computer
+science there isn't much difference between what I can build and what I can imagine. There are no
+physical constraints. The constraints in building software systems are limited only by our minds.
+
+* Techniques for controlling complexity
+** Black box abstraction
+Take something and build a box. You can design it so that it can be used as a module
+without having to look inside and understand it. From the user of a module's point of view,
+the internals do not matter and should not matter.
+
+Why do this?
+- To supress detail so you can build bigger things using your module as a component
+- Sometimes you want say that your method is an instance of a more general method. e.g.
+the method for finding a square root by averaging is an particular instance of the more general
+method of finding the fixed point of a function (the point where F(x) = x). You can then have
+procedures that make procdedures. e.g. if you input the function y --> average(y, x/y) then the 
+fixed point procedure should output a method for finding sqrt.
+
+* Three techniques for controlling complexity covered in the course
+** Black box abstraction
+Primitive objects
+- Primitive data
+- Primitave data
+Means of combination
+- Procedure composition
+- Construction of compound data
+Means of abstraction
+- Procedure definition
+- Simple data abstraction
+Caputuring common patterns
+- High-order procedures
+- Data as procedures
+
+** Conventional interfaces
+Agreed-upon ways of plugging things together
+Think of (* x (+ a1 a2))
+We want this to express the idea of multiplying x by the sum of a1 and a2 regardless of what
+kind of system we are in. For example, it could be numbers, or vectors, or we could be adding
+and multiplying polynomials, or electrical signals. And if someone else comes up with another
+thing that can be added or multiplied, we need to add this knowledge to our software without
+messing everything up. We do this with conventional interfaces.
+
+*** Topics
+Generic operations
+Large-scale structure and modularity
+- Object-oriented programming
+- Operations on aggregates called streams
+
+** Metalinguistic abstraction - Making new languages
+Pick a new design language that highlights different aspects of the system - supresses some
+details and highlights others
+Will express in lisp, the process of interpreting lisp
+Then will build a different langauge - prolog
+Implementing these things on a register machine - i.e. in hardware
+
+
+* Learning LISP
+When someone tells you about a language, you should ask them to show you:
+- The primitve elements
+- The means of combination
+- The means of abstraction
+
+You don't ask for something like 'how many characters does it take to invert a matrix'
+A combination consists of applying an operator to some operands. e.g. (+ 3 17.4 5)
+
+You can make this more complex because the operands can be combinations.
+
+Lisp uses prefix notation and is fully parenthesised to disambiguate
+Unlike in mathematics, in lisp you can't leave out parentheses and you can't put in extra
+parenthesis because parentheses mean that something is a combination where an operator
+applies to some operands.
+
+Realy a combination is a tree. We're writing trees and parentheses are a way to right a 
+tree structure using text.
+
+Then you can abstract by naming a combination using define.
+e.g.: (define A (+ 5 5))
+Then you can use it in other situations: e.g.:
+(define B (+ A (* 5 A)))
+
+But this isn't very powerful. e.g. you'd like to name the general idea of multiplying a number
+by itsef. i.e. squaring.
+
+You do it like this:
+
+(define (square x) (* x x))
+
+Then you can do:
+(square 10) and you will get 100
+
+This isn't making it clear that I"m naming something: Instead
+
+(define square (lambda (x) (* x x))) Like in the definition of A above you have (define square ...
+rather than (define (square x)... so it's clearer that you are naming something square.
+
+Lambda is lisp's way of saying, 'make a procedure'
+
+so (define square (lambda (x) (* x  x))) is saying 'define square to be make a procedure with an
+argument named x that returns the result of multiplying x by x'
+
+We will use the first form for convenience, but it is really the second form. To the lisp interpreter
+they are the same. i.e. the first form is syntactic sugar for the second.
+
+So remember that you are naming something square, and that something you are nameing is a procedure.
+
+The key thing is that having defined square, you can use it as if it is a primitive. You don't 
+make arbitrary distinctions between things that happen to be primitive and things that happen to
+be built in.
+
+You can think of if as syntactic sugar for cond, and cond as syntactic sugar for if, but it doesn't
+matter which. The person implementing lisp will pick one and implement the other in it.
+
+Why is it that sometimes when you write define you put an open paren after it and sometimes not.
+- When you do (define (square x) (* x x)) it is the special syntax for procedure definition. This
+is syntactic sugar for (define square (lambda (x) (* x x))). This is similar to (define A (* 5 5))
+
+
+* Part 3 - text section 1.1
+You might wonder where are structures like do..until and for loops. But we don't need these.
+
+Recursive definitions allow you to do computations that go on until something is true. [sounds
+like a while loop!]
+
+When you make your sqrt procedure you might make other procedures to help like try, and good-enough
+and improve. You can put these inside your sqrt procedure so that they are hidden. [a bit like
+private methods?] so that there aren't conflicts with other same-named helper procedures that might
+be e.g. used in a cube root procedure and so that the user of sqrt doesn't have to know anything
+about the internals of the procedure. This is called BLOCK STRUCTURE.
+
+* Summary of Lecture 1
+We are going to be expressing imperative knowledge.
+We have primitive procedures and data
+Means of combination for procedures: (), cond, and if
+Means of abstraction for procedures: define
+
+So we need to in the future learn how to combine data and how to abstract data.
+
+* Questions
+What is the difference between:
+(define A (* 5 5))
+(define (D) (* 5 5))
+
+In the interpreter:
+A returns 25
+D returns 'compound procedure d'
+(D) returns 25
+(A) returns an error
+
+
+* Lecture 1B. Processes and procedures, substitution model
+We need a mapping from the mechanism of a procedure into the way a procedure behaves. 
+
+The model we will learn isn't completely true. It is an engineering model useful for some processes.
+
+This model is the simplest model of understanding how procedures yield processes. It is called the SUBSTITUTION MODEL.
+
+How does one evaluate a combination?
+
+The substituion rule.
+
+To evaluate an application:
+  Evaluate the operator to get procedure
+  Evaluate the operands to get arguments
+  Apply the procedure to the arguments
+    Copy the body of the procedure substituting the arguments supplied for the formal parameters of the procedure.
+    Evaluate the resulting new body.
+
+If you don't understand something, be very mechanical and go through it using the substitution rule.
+
+Let's do it for sum of squares:
+(sos 3 4)
+Substitute 3 for x and 4 for y in the procedure:
+(define (sos x y)
+  (+ (sq x) (sq y)))
+
+So:
+(+ (sq 3) (sq 4))
+
+Evaluate the operands and the procedure (it doesn't matter which comes first)
+
+But to evaluate the operands, we have to evaluate the parts of it (the procedure and the operand)
+
+So the next result is:
+(+ (sq 3) (* 4 4))
+(+ (sq 3) 16)
+(+ (* 3 3) 16)
+(+ 9 16)
+25
+
+Let's look at conditionals:
+
+If has some parts:
+(if <predicate>
+    <consequent>
+    <alternative>)
+
+Note that it's handy to have the names of things. You need to learn these names so we can discuss these things.
+
+To evaluate an IF expression:
+  Evaluate the predicate expression:
+    if it yields TRUE
+      evaluate the consequent expression
+    otherwise
+      evaluate the alternative expression
+
+(define (inc x) (+ x 1))
+(define (dec x) (- x 1))
+
+(define (+ x y)
+  (if (= x 0)
+  y
+  (+ (dec x) (inc y))))
+
+By substitution:
+
+(+ 3 4)
+(if (= 3 0) 4 (+ (inc 3) (dec 4)))
+(+ (dec 3) (inc 4))
+(+ (dec 3) 5)
+(+ 2 5)
+
+* Lecture 1B part 2
+We have a mechanical way of understanding how a program evolves a process.
+Now we will look at particular programmes and the processes they evolve
+
+** Peano Arithmetic
+Two ways to add whole numbers
+
+(define (+ x y)
+  (if (= x 0)
+    y
+    (+ (-1+ x) (1+ y))))
+
+(define (+ x y)
+  (if (= x 0)
+  y
+  (1+ (+ (-1+ x) y))))
+
+ONe is iterative, one is recursive. If you do substitution and look at the shapes you notice some things about them:
+
+Iterative:
+Takes place in linear time (height of the set of substitutions) and constant space (i.e. the width stays the same)
+If kill the computer half way through the iteration, it can keep going once it is started up just using the arguments given to +
+
+Recursive
+Takes place in linear time
+Takes placec in linear space (the space needed grows with x)
+If you kill the computer half way through, you lose the deferred operation and you won't be able to restart with just the arguments
+given to the + operator half way through.
+
+
+

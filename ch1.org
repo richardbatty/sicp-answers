@@ -1,0 +1,1381 @@
+
+
+* Exercise 1.1
+#+BEGIN_SRC scheme
+2+2
+#+END_SRC
+10
+10
+
+10
+10
+
+(+ 5 3 4)
+12
+
+(- 9 1)
+8
+
+(/ 6 2)
+3
+
+(+ (* 2 4) (- 4 6))
+6
+
+(define a 3)
+???
+
+(define b (+ a 1))
+???
+
+(+ a b (* a b))
+
+
+(= a b)
+(if (and (> b a) (< b (* a b)))
+ b
+ a)
+(cond ((= a 4) 6)
+ ((= b 4) (+ 6 7 a))
+ (else 25))
+(+ 2 (if (> b a) b a))
+(* (cond ((> a b) a)
+ ((< a b) b)
+ (else -1))
+ (+ a 1))
+
+* Exercise 1.2
+(/ (+ 5 
+      4 
+      (- 2 
+         (- 3 
+      (+ 6 
+         (/ 1 5))))) 
+   (* 3 
+      (- 6 2)
+      (- 2 7)))
+
+* Exercise 1.3
+(define (square x) (* x x))
+
+(define (sum-of-squares a b) (+ (square a) (square b) ))
+
+(define (sum-of-squares-of-two-largest a b c)
+  (cond ((and (< a b) (< a c)) (sum-of-squares b c))
+        ((and (< b a) (< b c)) (sum-of-squares a c))
+  ((and (< c a) (< c b)) (sum-of-squares a b))))
+
+* Exercise 1.4
+(define (a-plus-abs-b a b)
+  ((if (> b 0) + -) a b))
+
+(if (> b 0) + -) evaluats to the + operator if b > 0 and the - operator if b < 0. So then this evaluates to either
+(+ a b) or (+ 0 b)
+
+
+* Exercise 1.5
+(define (p) (p))
+
+(define (test x y)
+  (if (= x 0)
+      0
+      y))
+
+(test 0 (p))
+
+Applicative order-order:
+(test 0 (p))
+Goes to:
+test is evaluated and found
+0 is evaluated to 0
+(p) is evaluated to (p) and you get a recursion depth exceeded.
+
+Normal-order evaluation:
+Evaluate test
+Put the parameters 0 and (p) into test:
+(if (= 0 0)
+    0
+    (p))
+
+Evaluate this. Given that 0 == 0, (p) is never evaluated and the result is 0.
+
+** QUESTION: What is the diference between (define (p) (p)) and (define (p) p) ?
+** QUESTION: What does a function definition evaluate to?
+   Footnote 8 of the first section says that the book doesn't show what definitions
+   evaluate to because it is very implementation-dependent
+
+* 1.1.7 Newton's method example:
+(define (good-enough guess x)
+  (< (abs (- (square guess) x))
+     0.001))
+
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (improve guess x)
+  (average guess (/ x guess))
+
+(define (sqrt guess x)
+  (if (good-enough guess x)
+    guess
+    (sqrt (improve guess x)
+          x)))
+
+* Exercise 1.6
+(define (new-if condition consequent-if-true consequent-if-false)
+  (cond (condition consequent-if-true)
+        (else consequent-if-false)))
+
+(define (sqrt-iter guess x)
+  (new-if (good-enough? guess x)
+          guess
+          (sqrt-iter (improve guess x)
+               x)))
+
+(cond (good-enough? guess x)
+
+Because the interpreter uses applicative-order evaluation sqrt-iter is evaluated to new-if with 3 arguments.
+All three arguments (good-enough? guess x), guess, and (sqrt-iter (improve guess x) x) are evaluated before
+being used in new-if. The problem is that when sqrt-iter is evaluated the same thing happens again. You'll
+get a recusion depth exceeded error. So even though in the conditional, if (good-enough? guess x) is true, 
+then (sqrt-iter (improve guess x) x) won't be evaluated, it will be anyway because it is passed as an argument.
+
+* Exercise 1.7
+Current good-enough:
+(define (good-enough guess x)
+  (< (abs (- (square guess) x))
+     0.001))
+
+Why won't this be very good for finding square roots of very small numbers?
+Because for a small number like 0.0001 a guess could be an order of magnitude away (e.g. the square of the guess is0.001) and still
+be 'good enough' (because 0.001 - 0.0001 = 0.0009 which is < 0.001). good-enough doesn't take account of
+the fact that difference between the guess and the real number which is good enough should be relative
+to the size of the number whose square root we are looking for.
+
+Why won't this be very good for finding square roots of very large numbers?
+Arithmetic operations in real computers are performed with limited precision. This means that the difference between the square
+of the guess and the number whose square root we are looking for could be > 0.001 just because of the lack of precision in the
+calculations.
+
+* Exercise 1.8
+Just redefine improve
+(define (improve guess x)
+  (/ (+ (/ x (square guess))
+        (* 2 guess)) 
+     3)
+
+
+* Exercise 1.9
+Procedure 1:
+(define (+ a b)
+  (if (= a 0)
+      b
+      (inc (+ (dec a) b))))
+
+a = 1
+b = 0
+
+(inc (+ (dec 1) 0)
+(inc (+ 0 0))
+(inc 0)
+1
+
+a = 2
+b = 3
+
+(inc (+ (dec 2) 3))
+(inc (+ 1 3))
+(inc (inc (+ (dec 1) 3)))
+(inc (inc (+ 0 3)))
+(inc (inc (3)))
+(inc 4)
+5
+
+a = 4
+b = 6
+(inc (+ (dec 4) 6))
+(inc (inc (+ (dec 3) 6)))
+(inc (inc (inc (+ (dec 2) 6))))
+(inc (inc (inc (inc (+ (dec 1) 6)))))
+(inc (inc (inc (inc (6)))))
+(inc (inc (inc 7)))
+(inc (inc 8))
+(inc 9)
+10
+
+This is recursive because a stack of incs builds up each waiting for it's arguments to be evaluated.
+
+Procedure 2:
+(define (+ a b)
+  (if (= a 0)
+      b
+      (+ (dec a) (inc b))))
+
+a = 4
+b = 6
+
+(+ (dec 4) (inc 6))
+(+ 3 7)
+(+ (dec 3) (inc 7))
+(+ (dec 2) (inc 8))
+(+ (dec 1) (inc 9))
+(+ 0 10)
+10
+
+This is iterative becase the procedure just passes arguments to the next version of itself.
+
+* Exercise 1.10
+(define (A x y)
+  (cond ((= y 0) 0)
+        ((= x 0) (* 2 y))
+        ((= y 1)  2)
+        (else (A (- x 1)
+                 (A x (- y 1))))))
+
+(A 1 10)
+(A (- 1 1) (A 1 (- 10 1)))
+(A 0 (A 1 9))
+(A 0 (A (- 1 1) (A 1 8)))
+(A 0 (A 0 (A 1 8)))
+(A 0 (A 0 (A 0 (A 1 7))))
+(A 0 (A 0 (A 0 (A 0 (A 1 6)))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 1 5))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 1 4)))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 1 3))))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 1 2)))))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 1 1)))))))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 2)))))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 4))))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 (A 0 8)))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 (A 0 16))))))
+(A 0 (A 0 (A 0 (A 0 (A 0 32)))))
+(A 0 (A 0 (A 0 (A 0 64))))
+(A 0 (A 0 (A 0 128)))
+(A 0 (A 0 256))
+(A 0 512)
+1024
+
+(A 2 4)
+(A 1 (A 2 3))
+(A 1 (A 1 (A 2 2)))
+(A 1 (A 1 (A 1 (A 2 1))))
+(A 1 (A 1 (A 1 2)))
+(A 1 (A 1 (A 0 (A 1 1))))
+(A 1 (A 1 (A 0 2)))
+(A 1 (A 1 4))
+(A 1 (A 0 (A 1 3)))
+(A 1 (A 0 (A 0 (A 1 2))))
+(A 1 (A 0 (A 0 (A 0 (A 1 1)))))
+(A 1 (A 0 (A 0 (A 0 2))))
+(A 1 (A 0 (A 0 4)))
+(A 1 (A 0 8))
+(A 1 16)
+(A 0 (A 1 15))
+
+
+(define (f n) (A 0 n))
+2n
+
+(define (g n) (A 1 n))
+2^y
+
+(define (h n) (A 2 n))
+
+
+
+(fib-iter 1 0 5)
+
+(fib-iter 1 1 4)
+
+(fib-iter 2 1 3)
+
+(fib-iter 3 2 2)
+
+(fib-iter 5 3 1)
+
+(fib-iter 8 5 0)
+
+* Counting change example
+You have some coins: 50, 25, 10, 5, 1
+You want to make a dollar
+
+How can you reduce the problem?
+- You reduce the number of coins you have
+- You reduce the amount you want to make
+
+So:
+- Make 1 dollar with 25, 10, 5, 1 OR
+- Make 50 c with 50, 25, 10, 5, 1
+
+So for each branch of the tree, the problem is slightly smaller.
+
+
+* Exercise 1.11
+g 2 1 0 3
+(g (+ 2 1 0) 2 1 2)
+(g 3 2 1 2)
+(g (+ 3 2 1) 3 2 1)
+(g 6 3 2 1)
+(g (+ 6 3 2) 6 3 0)
+(g 11 6 3 0)
+3
+
+0 1 2 3 6 11
+0 1 1 2 3 5
+
+If there is a sequence made by summing any k previous numbers of the sequence then:
+The first k numbers of the sequence must be defined as a degenerate case.
+The function is:
+(define (my_sequence_summer n)
+  (f highest_degenerate_no .. lowest_degenerate_no n))
+
+(define (f ak ak-1 .. a1 n)
+  (if (= n 0)
+    a1
+    (f (+ ak .. a1) ak ak-1 .. a1)))
+
+Why is it like this?
+You have a set of numbers that you keep track of in each iteration (a1 .. ak). a1 is the highest. You can imagine them layed out against the sequence like this (with 3 degenerate numbers):
+
+a1 a2 a3
+n1 n2 n3 n4 n5 ..
+
+When you are looking for the first member of the sequence (n1), that is a1, the first of the degenerate cases.
+
+You generate n4 by summing a1 + a2 + a3. Then you update your numbers so a1 = a2, a2 = a3, a3 = a1 + a2 + a3. You have moved your numbers rightward along the sequence of numbers:
+
+   a1 a2 a3
+n1 n2 n3 n4 n5
+
+And so now you can give the second member of the sequence n2. You go along like this and so you can give all the members of the sequence.
+
+Why don't you use a3 to give you the numbers of the sequence? Because they you won't be able to get the first two values of the sequence.
+
+(define (f n)
+  (cond ((< n 3) n)
+        (else (+ (f (- n 1)) (* 2 (f (- n 2))) (* 3 (f (- n 3)))))))
+
+Answer to exercise 1.11
+(define (iter-f n)
+  (g 2 1 0 n))
+
+(define (g previous one-before-previous one-before-one-before-previous count)
+  (if (= count 0)
+      one-before-one-before-previous
+      (g (+ previous (* 2 one-before-previous) (* 3 one-before-one-before-previous)) previous one-before-previous (- count 1))))
+
+* Exercise 1.12
+(define (pascal col row)
+  (cond ((> col row) 0)
+        ((or (= col 0) (= col row)) 1)
+        (else (+ (pascal (- col 1) (- row 1)) (pascal col (- row 1))))))
+
+This is recursive rather than iterative because the else clause has to wait for the inner calls to pascal to return before performing the addition.
+
+* Exercise 1.13
+Skipped after trying for 1 hour. Come back to it. I think my algebra is too bad.
+
+* Exercise 1.14
+Come back after understanding count-change
+Could make the diagram, but couldn't see how to get the complexity. Read this fantastic post: http://www.billthelizard.com/2009/12/sicp-exercise-114-counting-change.html
+
+* Exercise 1.15
+procedure p is applied 5 times when (sine 12.15) is evaluated:
+(p (p (p (p( p( sine 0.049))))))
+
+Linear growth in time and space. WRONG:
+http://www.billthelizard.com/2009/12/sicp-exercise-115-calculating-sines.html
+You can tell this by adding a constant amount to the input each time (e.g. 1) and seeing how many times you have to add 1 for the number of steps to increase. The amount you have to add triples each time because the input gets divided by 3. The points at which an additional step is needed are:
+0.1                  0.1
+0.1 * 3              0.3
+0.1 * 3 * 3          0.9
+0.1 * 3 * 3 * 3      2.7
+0.1 * 3 * 3 * 3 * 3  8.1
+
+Analysis: For orders of growth, I need to step through, increasing the input and seeing how it increases the number of steps.
+
+  
+* Exercise 1.16
+Recursive version given in the book:
+#+BEGIN_SRC scheme
+  (define (even? n)
+    (= (remainder n 2 ) 0))
+  
+  (define (fast-expt b n)
+    (cond ((= n 0) 1)
+          ((even? n) (square (fast-expt b (/ n 2))))
+          (else (* b (fast-expt b (- n 1))))))
+  
+  (fast-expt 2 8)
+#+END_SRC
+
+My iterative solution:
+#+BEGIN_SRC scheme
+  (define (expt b n)
+    (expt-iter b n 1))
+
+  (define (expt-iter b n)
+    (expt-iter-func b n 1))
+
+  (define (expt-iter-func b counter product)
+    (if (= counter 0)
+        product
+        (expt-iter-func b (- counter 1) (* b product))))
+
+  ;a is initially set to 1
+  (define (fast-expt-iter b n a)
+    (display n)
+    (display " ")
+    (display b)
+    (display " ")
+    (display a)
+    (display "\n")
+    (cond ((= n 1) (* a b))
+          ((even? n) (fast-expt-iter (square b) (/ n 2) (* 1 a)))
+          (else (fast-expt-iter (square b) (/ (- n 1) 2) (* b a)))))
+
+  ;Bill the lizard's expt-iter:
+  (define (expt-iter-bill b n a)
+    (cond ((= n 0) a)
+          ((even? n) (expt-iter (square b) (/ n 2) a))
+          (else (expt-iter  b (- n 1) (* a b)))))
+  
+#+END_SRC
+
+I've thought about this a little further: the reason bill-the-lizard's solution is nicer than
+mind is becasue it has the invariant quantity. So in each call of the function, a * b^n is always
+the same, and it is the answer. If n is odd then you square b, halve n, and keep a the same. If
+n is even then you keep b the same, reduce n by one, and put a equal to * a b. This separation
+is quite nice and is nicer than just storing up the left over multiplications from odd case
+to do at the end.
+
+* Exercise 1.17
+Multiplication procedure from the book:
+#+BEGIN_SRC scheme
+(define (multiply a b)
+  (if (= b 0)
+      0
+      (+ a (* a (- b 1)))))
+#+END_SRC scheme
+
+#+BEGIN_SRC scheme
+(define (double n)
+  (+ n n))
+
+;Not sure how to do halve without division
+(define (halve n)
+  (/ n 2))
+
+(define (multiply-fast a b)
+  (cond ((= b 1) a)
+        ((even? b) (multiply-fast (double a) (halve b)))
+        (else (+ a (multiply-fast (double a) (halve b))))))
+
+;a is initially set to 0
+(define (multiply-iter-fast number counter a)
+  (cond ((= counter 1) (+ a number))
+        ((even? counter) (multiply-iter-fast (double number) (halve counter) a))
+        (else (multiply-iter-fast (double number) (halve (- counter 1)) (+ number a)))))
+
+;Note that I didn't quite read the question right and I created an iterative procedure when
+;That wasn't necessary. I therefore inadvertently answered q 1.18
+  
+#+END_SRC scheme
+
+* Exercise 1.19
+
+#+BEGIN_SRC scheme
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+
+(define (fib-iter a b p q count)
+  (cond ((= count 0) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q)) ; compute p'
+                   (+ (square q) (* 2 p q)) ; compute q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+
+#+END_SRC scheme
+
+i.e the standard fibonacci relation is:
+a1 = (+ (* b0 q) (* a0 q) (* a0 p))
+b1 = (+ (* b0 p) (* a0 q))
+
+And so you can find a2 and b2 from a0 and b0:
+a2 = (+ (* b0 q') (* a0 q') (* a0 p'))                   
+b2 = (+ (* b0 p') (* a0 q'))
+
+Where:
+p' = (+ (square p) (square q))
+q' = (+ (square q) (* 2 p q))
+
+So what is happening in fib-iter above?
+If count is even, then you just find p' and q' and pass them to the next recursion as p and q.
+Question? Why do you do (/ count 2) when finding p' and q' only alows you jump two steps in the
+fibonnacci sequence. it doesn't appear to halve the problem space.
+Anser: Because on the next run through, you use p' and q' as inputs to the p' and q' fomulas.
+Therefore you are finding how to jump 4 steps. On the next run through you calculate enough
+to jump 8 steps. And so on. It is a bit like doing 2^8 by passing 2, which recurses by passing
+4, which then passes 8 etc.
+THIS WOULD BE BLOG POST MATERIAL. Maybe with a vizualisation.
+
+
+* 1.2.5 Greatest Common Divisors
+See http://math.stackexchange.com/questions/59147/need-help-understanding-euclids-algorithm-to-find-greatest-common-divisor 
+for understanding Euclid's algorithm
+
+* Exercise 1.20
+(define (gcd a b)
+  (if (=b 0)
+      a
+      (gcd b (remainder a b))))
+
+Applicative order (evaluate all the arguments then apply)
+
+(gcd 206 40)
+(gcd 40 (remainder 206 40))
+(gcd 40 6)
+(gcd 6 (remainder 40 6))
+(gcd 6 4)
+(gcd 4 (remainder 6 4))
+(gcd 4 2)
+(gcd 2 (remainder 4 2))
+(gcd 2 0)
+2
+
+Normal-order (only evaluate arguments when they are needed, i.e. lazy evaluation)
+Does needed include being passed in as an argument?
+(gcd 206 40)
+(gcd 40 (remainder 206 40))
+(gcd (remainder 206 40) (remainder 206 (remainder 206 40)))
+(gcd (remainder 206 (remainder 206 40)) (remainder 
+
+I couldn't be bothered to do all the expansions but Mr Lizard has them: http://www.billthelizard.com/2010/01/sicp-exercise-120-gcd.html
+Basically, the remainders aren't calculated until necessary (either when checking (= b 0) or when returning
+a. In applicative order, remainder was only evaluated 4 times. In normal-order, it is evaluated 18 times.
+
+* 1.2.6 Example: Testing for Primality
+(define (expmod base exp m)
+  (display "base ")
+  (display base)
+  (display " exp ")
+  (display exp)
+  (display " m ")
+  (display m)
+  (display "\n")
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))
+
+* Exericse 1.21
+(define (smallest-divisor n)
+   (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+   (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+           (else (find-divisor n (+ test-divisor 1)))))
+
+(define (divides? a b)
+   (= (remainder b a) 0))
+
+(define (prime? n)
+   (= n (smallest-divisor n)))
+
+(smallest-divisor 199)
+199
+
+(smallest-divisor 1999)
+1999
+
+(smallest-divisor 19999)
+7
+
+(smallest-divisor 199999)
+199999
+
+(smallest-divisor 1999999)
+17
+
+(smallest-divisor 19999999)
+19999999
+
+(smallest-divisor 199999999)
+89
+
+Why??
+
+* Exercise 1.22
+(define (prime? n)
+   (= n (smallest-divisor n)))
+
+(define (timed-prime-test n)
+     (start-prime-test n (current-inexact-milliseconds)))
+
+(define (start-prime-test n start-time)
+   (if (prime? n)
+        (report-prime (- (runtime) start-time) n)))
+
+(define (report-prime elapsed-time prime)
+  (newline)
+  (display prime)
+   (display " *** ")
+    (display elapsed-time))
+
+(with-timings
+ (lambda () (prime? 567876545678765456787))
+ (lambda (run-time gc-time real-time)
+   (write (internal-time/ticks->seconds run-time))
+   (write-char #\space)
+   (write (internal-time/ticks->seconds gc-time))
+   (write-char #\space)
+   (write (internal-time/ticks->seconds real-time))
+   (newline)))
+
+(define (display-with-newline text)
+  (display text)
+  (newline))
+
+(define (search-for-primes n end-range)
+  (timed-prime-test n)
+  (cond ((< n end-range) (search-for-primes (+ n 1) end-range))))
+
+
+;Fuck this, I can't find a working timing function. (runtime) doesn't seem to work.
+
+* Exercise 1.23
+(define (smallest-divisor n)
+   (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (display "n ")
+  (display n)
+  (display " test-divisor ")
+  (display test-divisor)
+  (newline)
+   (cond ((> (square test-divisor) n) n)
+         ((divides? test-divisor n) test-divisor)
+         (else (find-divisor n (next test-divisor)))))
+
+(define (divides? a b)
+   (= (remainder b a) 0))
+
+(define (next n)
+  (if (= n 2)
+      3
+      (+ n 2)))
+
+According to Bill the lizard, this version is only about 1.85 times as fast as the version
+that just increments by 1, even though you'd expect a doubling of speed. This is probably
+because we've replaced a primitive operation (+ test-divisor 1) with a call to a function
+which includes an if (next test-divisor).
+
+* Exercise 1.24
+Skipped as it's another 'time this algorithm' exercise.
+
+* Exercise 1.25
+Alyssa P. Hacker thinks we can write expmod like this:
+(define (fast-expt b n)
+   (display "b: ")
+   (display b)
+   (display " n: ")
+   (display n)
+   (newline)
+   (cond ((= n 0) 1)
+          ((even? n) (square (fast-expt b (/ n 2))))
+           (else (* b (fast-expt b (- n 1))))))
+
+(define (expmod-alt base exp m)
+  (display " base: ")
+  (display base)
+  (display " exp: ")
+  (display exp)
+  (display " m: ")
+  (display m)
+  (newline)
+  (remainder (fast-expt base exp) m))
+
+When in fact we wrote it like this:
+(define (expmod base exp m)
+  (display " base: ")
+  (display base)
+  (display " exp: ")
+  (display exp)
+  (display " m: ")
+  (display m)
+  (newline)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))
+
+
+Would this serve well for our fast prime tester?
+It is slower, but I cound't see how because the number of steps is the same. Bill the lizard
+anwers:
+"The important point is that the original expmod procedure uses successive squaring to perform its computations without ever having to deal with numbers larger than m. Simple arithmetic with very large numbers is much slower than arithmetic with 32-bit integers. That's because the time complexity for arithmetic operations is based on the number of bits in the operands. The intermediate results during computation in the fast-expt procedure get very big, very quickly (the final result is growing exponentially, after all). Since we're only interested in the remainder, modular arithmetic provides a much sleeker solution, as explained in the footnote."
+
+* Exercise 1.26
+It has become tree-recursive, therefore slower.
+
+* Exercise. 1.27
+Skipped, didn't think it would add anything.
+
+* Exercise 1.28
+Skipped
+
+* 1.3.1 Procedures as arguments
+(define (sum term a next b)
+  (display (term a))
+  (newline)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+
+(define (pi-sum-term n)
+  (/ 1.0 (* n (+ n 2))))
+
+(define (pi-sum-incrementor)
+  (incrementor 4))
+
+(define (pi-sum start end)
+  (sum pi-sum-term start (pi-sum-incrementor) end))
+
+(define (incrementor amount)
+  (lambda (initial)
+    (+ initial amount)))
+
+* Exercise 1.29
+; Integral of function f between a and b, for some integer n
+(define (sum term first next last)
+  (if (> first last)
+      0
+      (+ (term first)
+         (sum term (next first) next last))))
+
+(define (cube x)
+  (* x x x))
+
+(define (simpsons-term-generator func start end step-length)
+  (lambda (k)
+    (* (coefficient k end)
+       (func (+ start
+                (* k step-length))))))
+
+(define (inc n)
+  (+ n 1))
+
+(define (simpsons-integral func start end no-of-steps)
+  (define step-length (step-length-calculator start end no-of-steps))
+  (define y (simpsons-term-generator func start end step-length))
+  (* (/ step-length 3)
+     (sum y
+          start
+          inc
+          no-of-steps)))
+
+(define (coefficient index last)
+  (cond ((or (= index 0) (= index last)) 1)
+        (else (* (inc (remainder index 2))
+                 2))))
+
+(define (step-length-calculator start end no-of-steps)
+  (/ (- start end) no-of-steps))
+
+(rationalize (simpsons-integral cube 0 1 1000) 0.000000001)
+
+; My solution is pretty similar to Bill the Lizard's, but instead of creating functions
+; that return functions for y and simpsons-term-generator (h) he just defines them within
+; the simpsons-term-generator scope so they have access to variables they need like a, b, and n.
+
+* Exercise 1.30
+(define (sum-iter term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (+ result (term a)))))
+  (iter a 0))
+
+; Correct, according to Bill the Lizard
+
+* Exercise 1.31
+(define (product term first next last)
+  (display "first: ")
+  (display first)
+  (newline)
+  (if (> first last)
+      1
+      (* (term first)
+         (product term (next first) next last))))
+
+(define (product-iter term first next last)
+  (define (iter first result)
+    (if (> first last)
+        result
+        (iter (next first) (* result (term first)))))
+  (iter first 1))
+
+(define (factorial n)
+  (define (term a) a)
+  (product term 1 inc n))
+
+(define (wallis-increment n)
+  (+ n 2))
+
+(define (wallis-top-term n)
+  (* n (+ n 2)))
+
+(define (find-pi accuracy)
+  (rationalize (* 4 (/ (product wallis-top-term 2 inc-2 accuracy)
+                       (product square 3 inc-2 (+ 1 accuracy))))
+                  0.0000000001))
+
+(find-pi 1000)
+
+;Alternatively, using the mathematical formula (read up the formula in Bill the Lizard's write up, then implemented it without
+;reading further)
+(define (wallis-term n)
+  (/ (* 4 (square n))
+     (- (* 4 (square n))
+        1)))
+
+(define (find-pi-wallis accuracy)
+  (rationalize (* 2 (product wallis-term 1 inc accuracy)) 0.0000000001))
+
+(product square 4 inc-2 20)
+(product square 3 inc-2 20)
+
+* Exercise 1.32
+** a
+
+(define (identity x) x)
+
+(define (accumulate combiner null-value term a next b)
+  (if (> a b)
+      null-value
+      (combiner (term a) (accumulate combiner null-value term (next a) next b))))
+
+(define (sum-acc term a next b)
+  (accumulate + 0 term a next b))
+
+(sum-acc identity 0 inc 10)
+
+
+(define (product-acc term a next b)
+  (accumulate * 1 term a next b))
+
+(product-acc identity 1 inc 10)
+
+** b
+(define (accumulate-iter combiner null-value term a next b)
+  (define (accumulate-iter-inner combiner term a next b result)
+    (if (> a b)
+        result
+        (accumulate-iter-inner combiner term (next a) next b (combiner (term a) result))))
+  (accumulate-iter-inner combiner term a next b null-value))
+
+(accumulate-iter + 0 identity 0 inc 10)
+
+(accumulate-iter * 1 identity 1 inc 10)
+
+;Basically the same as bill the lizard's except that I didn't realise you could pass + and * in directly (which
+;I have done here) and also bill's accumulate-iter-inner function only took a and result as arguments, the
+;rest being supplied by the outer function.
+
+* Exercise 1.33
+** a
+(define (filtered-accumulate combiner filter null-value term a next b)
+  (if (> a b)
+      null-value
+      (if (filter a)
+          (combiner (term a) (filtered-accumulate combiner filter null-value term (next a) next b))
+          (filtered-accumulate combiner filter null-value term (next a) next b))))
+
+(define (divides? a b)
+   (= (remainder b a) 0))
+
+(define (find-divisor n test-divisor)
+   (cond ((> (square test-divisor) n) n)
+          ((divides? test-divisor n) test-divisor)
+           (else (find-divisor n (+ test-divisor 1)))))
+
+(define (smallest-divisor n)
+   (find-divisor n 2))
+
+(define (prime? n)
+   (and (not (= n 1)) (= n (smallest-divisor n))))
+
+(define (identity x) x)
+
+(filtered-accumulate + prime? 0 square 1 inc 10)
+
+** b
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+(define (relatively-prime? i n)
+  (= 1 (gcd i n)))
+
+(define (relatively-prime-to-n? n)
+  (define (relatively-prime-closure i)
+    (relatively-prime? i n))
+  relatively-prime-closure)
+
+;Again, bill the lizard just used the environment for relatively-prime-to-n to acccess n
+
+
+(filtered-accumulate * (relatively-prime-to-n? 11) 1 identity 1 inc 11)
+
+* 1.3.2 Constructing Procedures Using Lambda
+(define x 2)
+(let ((x 3)
+      (y (+ x 2)))
+  (* x y))
+
+Equivalent to:
+(define x 2)
+((lambda (a b)
+   (* a b))
+ 3
+ (+ x 2))
+
+* Exercise 1.34
+(define (f g)
+  (display "here we are in f")
+  (g 2))
+
+(f square)
+
+(f (lambda (z) (* z (+ z 1))))
+
+(f f)
+
+(f (f 2))
+
+(f (2 2))
+
+;My above answer is wrong, it should be:
+(f f)
+;Then f tries to apply it's argument f to 2
+(f 2)
+;Which then leads to
+(2 2)
+
+;Then it tries to apply 2 to 2, but 2 is not applicable.
+
+Work out why I thought differently?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+I missed that
+(f f)
+
+does not evaluate the second f. The second f is just an argument. If you therefore
+apply f to f you get:
+(f 2) -- according to the definition of f
+
+Which then evaluates to (2 2)
+
+i.e. a function definition doesn't get replaced by its body in an expression, I guess because
+a function that isn't being called is just a function.
+
+* Section 1.3.3 Procedures as General Methods
+** Finding roots of equations
+(define (average a b)
+  (/ (+ a b) 2))
+
+(define (search f neg-point pos-point)
+  (let ((midpoint (average neg-point pos-point)))
+    (if (close-enough? neg-point pos-point)
+        midpoint
+        (let ((test-value (f midpoint)))
+          (cond ((positive? test-value)
+                 (search f neg-point midpoint))
+                ((negative? test-value)
+                 (search f midpoint pos-point))
+                (else midpoint))))))
+
+(define (close-enough? x y)
+  (< (abs (- x y)) 0.001))
+
+(define (half-interval-method f a b)
+  (let ((a-value (f a))
+        (b-value (f b)))
+    (cond ((and (negative? a-value) (positive? b-value))
+           (search f a b))
+          ((and (negative? b-value) (positive? a-value))
+           (search f b a))
+          (else
+           (error "Values are not of opposite sign" a b)))))
+
+(half-interval-method sin 2.0 4.0)
+
+(half-interval-method (lambda (x) (- (* x x x) (* 2 x) 3))
+                      1.0
+                      2.0)
+
+** Finding fixed-points of functions
+(define tolerance 0.00001)
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+* Exercise 1.35
+For the function:
+f(x) = 1 + 1/x
+
+Fixed point at:
+f(x) = x
+
+Therefore fixed point where
+x = 1 + 1/x
+
+Rearranging:
+
+0 = x^2 - x - 1
+
+Using the quadratic formulat:
+
+x = 1/2(1 - 5^0.5)
+
+or
+
+x = 1/2(1 + 5^0.5) <--- This is the golden ratio
+
+Can calculate the golden ratio by doing:
+
+(fixed-point (lambda (x) (+ 1 (/ 1 x))) 1.0)
+
+; Correct according to Mr Lizard
+
+* Exercise 1.36
+(define tolerance 0.00002)
+(define (fixed-point-printer f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess count)
+    (display count)
+    (display ". ")
+    (display guess)
+    (newline)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next (+ count 1)))))
+  (try first-guess 1))
+
+Without average damping:
+(fixed-point-printer (lambda (x) (/ (log 1000) (log x))) 2.0)
+34 steps
+
+With average damping:
+(fixed-point-printer (lambda (x) (average (/ (log 1000) (log x)) x)) 2.0)
+9 steps
+
+; Correct according to Mr Lizard
+
+* Exercise 1.37
+** a
+(define (cont-frac n d k counter)
+  (if (= counter k)
+      (/ (n counter) (d counter))
+      (/ (n counter) (+ (d counter) (cont-frac n d k (+ counter 1))))))
+      
+
+(cont-frac (lambda (i) 1.0)
+           (lambda (i) 1.0)
+           400 1)
+
+Got it wrong the first time - my counter was going downwards rather than upwards.
+
+
+
+
+** b
+(define (cont-frac-iter-inner n d k result)
+  (if (= k 1)
+      (/ (n 1 ) (+ (d 1) result))
+      (cont-frac-iter-inner n d (- k 1) (/ (n k) ( + (d k ) result)))))
+
+(define (cont-frac-iter n d k)
+  (cont-frac-iter-inner n d k 0))
+
+(cont-frac-iter (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                400)
+
+
+* Exercise 1.38
+(define (euler-series-element n)
+  (if (= 0 (remainder (- n 2) 3))
+      (- n (/ (- n 2) 3))
+      1))
+
+(define (eulers-number)
+  (+ 2
+     (cont-frac-iter (lambda (i) 1.0)
+                euler-series-element
+                400))
+
+* Exercise 1.39
+(define (lamberts-tan x k)
+  (cont-frac-iter (lambda (i)
+                     (if (= 1 i)
+                         x
+                         (- (square x))))
+                   (lambda (i)
+                     (- (* 2 i) 1))
+                   k))
+
+
+(lamberts-tan 1.5 100)
+
+Correct accoring to Mr Lizard
+
+* Exercise 1.40
+(define tolerance 0.00001)
+(define (fixed-point f first-guess)
+    (define (close-enough? v1 v2)
+          (< (abs (- v1 v2)) tolerance))
+      (define (try guess)
+        (let ((next (f guess)))
+          (if (close-enough? guess next)
+              next
+              (try next))))
+      (try first-guess))
+
+(define dx 0.00001)
+
+(define (deriv g)
+    (lambda (x)
+          (/ (- (g (+ x dx)) (g x))
+                    dx)))
+
+(define (newton-transform g)
+    (lambda (x)
+          (- x (/ (g x) ((deriv g) x)))))
+
+(define (newtons-method g guess)
+    (fixed-point (newton-transform g) guess))
+
+(define (cube x)
+  (* x x x))
+
+(define (square x)
+  (* x x))
+
+(define (cubic a b c)
+  (lambda (x)
+    (+ (cube x)
+       (* a (square x))
+       (* b x)
+       c)))
+
+(newtons-method (cubic 1 2 3) 1)
+
+(newtons-method (cubic 3 -2.4 6) 1)
+
+;Correct according to Mr Lizard
+
+* Exercise 1.41
+(define (double f)
+  (lambda (x)
+    (f (f x))))
+
+(((double (double double)) inc) 5)
+
+;Correct according to Mr Lizard
+
+* Exercise 1.42
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+
+((compose square inc) 6)
+
+;Correct according to Mr Lizard
+
+* Exercise 1.43
+(define (repeated f n)
+  (if (= n 1)
+      f
+      (compose f (repeated f (- n 1)))))
+
+((repeated square 2) 5)
+
+((repeated inc 2) 5)
+
+((repeated inc 10) 10)ru
+
+* Exercise 1.44
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (smooth f dx)
+  (lambda (x)
+    (/ ( + (f x)
+           (f (- x dx))
+           (f (+ x dx)))
+       3)))
+       
+
+(define pi 3.14159)
+
+((smooth sin 0.7) (/ pi 2))
+
+(define (repeated-smooth-n f n dx)
+  ((repeated (smooth f dx) n)))
+
+* Exercise 1.45
+(define tolerance 0.0001)
+(define (fixed-point f first-guess)
+    (define (close-enough? v1 v2)
+          (< (abs (- v1 v2)) tolerance))
+      (define (try guess)
+        (display "Guess: ")
+        (display guess)
+        (let ((next (f guess)))
+          (if (close-enough? guess next)
+              next
+              (try next))))
+      (try first-guess))
+
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+
+(define (sqrt x)
+  (fixed-point (average-damp (lambda (y) (/ x y)))
+               1.0))
+
+(sqrt 2)
+
+(define (cube-root x)
+  (fixed-point (average-damp (lambda (y) (/ x (square y))))
+               1.0))
+
+(cube-root 5)
+
+(define (cube x)
+  (* x x x))
+
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+
+(define (repeated f n)
+  (if (= n 1)
+      f
+      (compose f (repeated f (- n 1)))))
+
+(define (fourth-root x)
+  (fixed-point (repeated (average-damp (lambda (y) (/ x (cube y))))
+                         2)
+               1.0))
+
+
+(fourth-root 10000)
+
+(define (fourth-power x)
+  (* x x x x))
+
+(define (fifth-root x)
+  (fixed-point (repeated (average-damp (lambda (y) (/ x (fourth-power y))))
+                         3)
+               1.0))
+
+(fifth-root 100000)
+
+
+(define (fifth-power x)
+  (* x x x x x))
+
+(define (sixth-root x)
+  (fixed-point (repeated (average-damp (lambda (y) (/ x (fifth-power y))))
+                         3)
+               1.0))
+
+(sixth-root 5000)
+
+(define (nth-root x n)
+  (fixed-point (repeated (average-damp (lambda (y) (/ x (expt y (- n 1)))))
+                         2)
+               1.0))
+
+(nth-root 5 6)
+
+(define (nth-root-bill x n)
+  (fixed-point
+   ((repeated average-damp 2)
+    (lambda (y) (/ x (expt y (- n 1)))))
+   1.0))
+
+(nth-root 5 6)
+
+4 | 2
+5 |
+
+; I was wrongly composing (average-damp (lambda (y) (/ x (expt y (- n 1))))) instead of
+; just average-damp
+
+* Exercise 1.46
+
+
+(define (iterative-improve good-enough? improve)
+  (define (try guess)
+    (if (good-enough? guess)
+        guess
+        (try (improve guess))))
+  try)
+
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (sqrt x)
+  (define (sqrt-good-enough? guess)
+    (> 0.0001 (abs (- (* guess guess) x))))
+  (define (sqrt-improve guess)
+    (average guess (/ x guess)))
+  ((iterative-improve sqrt-good-enough? sqrt-improve) 1.0))
+
+(sqrt 2)
+
+(define (fixed-point f first-guess)
+  (define (fp-close-enough? guess)
+    (< (abs (- guess (f guess))) 0.000001))
+  (define (fp-improve guess)
+    (f guess))
+  ((iterative-improve fp-close-enough? fp-improve)
+   first-guess))
+
+(fixed-point cos 1.0)
+(fixed-point (lambda (x) (+ 1 (/ 1 x))) 2.0)
+
+;Correct according to Mr Lizard
+
+END OF CHAPTER 1!!!!
