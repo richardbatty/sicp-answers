@@ -358,26 +358,815 @@ to normal numerals
 ;Correct
 
 * Exercise 2.9
-Examples:
-(mul-interval (make-interval -2 30) (make-interval 8 20))
+Define two intervals
+interval X1 = (a1, a2)
+interval X2 = (b1, b2)
 
-(define (addition-width x y)
-  (- (+ (lower-bound x) (lower-bound y))
-     (+ (upper-bound x) (upper-bound y))))
+Add the intervals together to get another interval
+interval X1 + X2 = (a1 + b1, a2 + b2)
 
-(define (addition-width x y)
-  (- (max (upper-bound x) (upper-bound y))
-     (min (lower-bound x) (lower-bound y))))
+Find the width of this interval
+1) width(interval X1 + X2) = (a2 + b2) - (a1 + b1)
 
-(define (sub-width x y)
-  (- (- (lower-bound x) (upper-bound y))
-     (- (upper-bound x) (lower-bound y))))
+Conversely:
+Add the widths of the two intervals together:
+2) width(interval X1) + width(interval X2) = (a2 - a1) + (b2 - b1)
 
-(define (mul-width
-        
+Which, with some arrangement, is the same as the equation 1) above.
+
+This means that the width of the sum of two intervals is the same as the sum of the widths of two intervals.
+
+Counterexample to width of multiplied intervals being a function  of the widths of multiplied intervals: (from bill the lizard)
+
+(define a (make-interval 2 4))
+(define b (make-interval 5 10))
+(define c (make-interval 10 15))
+(mul-interval a b)
+(10 . 40)
+(mul-interval a c)
+(20 . 60)
+
+b and c have the same widths. When we multiply them by a, they end up with with different widths.
+If the resulting width was a function of the widths of the input intervals, then the widths would be the same because (mul-interval a b) is made up of an interval of width 2 and one of width 5 and similarly (mul-interval a c) is also made up of an interval of width two and one of width 5. That they give different resultant widths suggests that the input widths are not the only information needed to find the resultant width.
+
+;Done with help from Bill the Lizard
 
 * Exercise 2.10
+(define (width interval)
+  (abs (- (car interval) (cdr interval))))
 
+(width (make-interval 1 1))
+
+(define (div-interval x y)
+  (mul-interval x
+                (if (= (width y) 0)
+                    (error "Division by interval of 0 width")                    
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
+
+(div-interval (make-interval 2 3) (make-interval 4 4))
+(div-interval (make-interval 2 2) (make-interval 3 4))
+(div-interval (make-interval 1 4) (make-interval 1 10))
+
+                                        ;I misinterpreted the question thinking 'spans zero' means 'width of zero' when it actually means that the interval spans zero - i.e. one point is positive and one is negative.
+                                        ; Bill the lizard's answer is:
+(define (spans-zero? y)
+  (and (<= (lower-bound y) 0)
+       (>= (upper-bound y) 0)))
+
+(define (div-interval x y)
+  (if (spans-zero? y)
+      (error "Error: The denominator should not span 0.")
+      (mul-interval x
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+(define (positive num)
+  (> num 0))
+
+;Skipped as this would require really convoluted code
+
+* Exercise 2.11
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+
+(define (width i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+
+(define (find-percentage-of num percentage)
+  (* (/ percentage 100) num))
+
+(define (percent interval)
+  (let ((tolerance (- (center interval) (lower-bound interval))))
+    (/ tolerance (center interval))))
+
+(define (make-center-percent c percentage)
+  (let ((tolerance (find-percentage-of c percentage)))
+    (make-center-width c tolerance)))
+
+(make-center-percent 10 30)
+(percent (make-center-percent 10 30))
+
+(define a (make-center-percent 5 20))
+a
+(center a)
+(width a)
+(percent a)
+
+;Works as well as Bill the Lizard's solution
+* Section 2.2 Hierarchical Data and the Closure Property
+(cons 1 (cons 2 (cons 3 (cons 4 '()))))
+-> (1 2 3 4)
+
+(cons 1 (cons 2 (cons 3 4)))
+-> (1 2 3 . 4))
+
+'(1 . (2 . (3 . (4 . ()))))
+-> (1 2 3 4)
+
+(list 1 2 (cons 3 4))
+-> (1 2 (3 . 4))
+
+(list 1 2 '(3 . 4))
+-> (1 2 (3 . 4))
+
+(cons 1 (cons 2 (cons (cons 3 4) '())))
+-> (1 2 (3 . 4))
+
+
+(define (list-ref items n)
+  (if (= n 0)
+      (car items)
+      (list-ref (cdr items) (- n 1))))
+
+(define (length items)
+  (if (null? items)
+      0
+      (+ 1 (length (cdr items)))))
+
+(define (length-iter items count)
+  (if (null? items)
+      count
+      (length-iter (cdr items) (+ 1 count))))
+
+(define (length items)
+  (length-iter items 0))
+
+(define (append a b)
+  (if (null? a)
+      b
+      (cons (car a) (append (cdr a) b))))
+
+* Exercise 2.17
+(define (last-pair items)
+  (if (null? (cdr items))
+      items
+      (last-pair (cdr items))))
+
+Correct according to bill the lizard
+
+* Exercise 2.18
+(define (all-except-last items)
+  (if (= 2 (length items))
+      (list (car items))
+      (cons (car items) (all-except-last (cdr items)))))
+
+(define (last-item items)
+  (car (last-pair items)))
+
+(define (reverse l)
+  (if (null? (cdr l))
+      l
+      (cons (last-item l) (reverse (all-except-last l)))))
+
+
+Bill-the-lizard's solution:
+(define (reverse items)
+  (if (null? items)
+      items
+      (append (reverse (cdr items)) (list (car items)))))
+
+* Exercise 2.19
+** Original method
+(define (count-change amount)
+  (cc amount 5))
+(define (cc amount kinds-of-coins)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (= kinds-of-coins 0)) 0)
+        (else (+ (cc amount
+                     (- kinds-of-coins 1))
+                 (cc (- amount
+                        (first-denomination kinds-of-coins))
+                     kinds-of-coins)))))
+(define (first-denomination kinds-of-coins)
+  (cond ((= kinds-of-coins 1) 1)
+        ((= kinds-of-coins 2) 5)
+        ((= kinds-of-coins 3) 10)
+        ((= kinds-of-coins 4) 25)
+        ((= kinds-of-coins 5) 50)))
+
+
+** New method
+
+(define us-coins (list 25 50 10 1 5))
+(define uk-coins (list 100 50 20 10 5 2 1))
+
+(define (no-more? coin-values)
+  (null? coin-values))
+
+(define (first-denomination coin-values)
+  (car coin-values))
+
+(define (except-first-denomination coin-values)
+  (cdr coin-values))
+
+(define (cc amount coin-values)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (no-more? coin-values)) 0)
+        (else
+         (+ (cc amount
+                (except-first-denomination coin-values))
+            (cc (- amount
+                   (first-denomination coin-values))
+                coin-values)))))
+
+(cc 100 us-coins)
+
+Order of list coin-values does not affect the result.
+
+* Exercise 2.20
+(define (my-filter l include?)
+  (cond ((null? l) l)
+        ((include? (car l))
+         (cons (car l) (my-filter (cdr l) include?)))
+        (else (my-filter (cdr l) include?))))
+
+(my-filter '(1 2 3 4 5) even?)
+
+(define (same-parity num . num-list)
+  (if (even? num)
+      (cons num (my-filter num-list even?))
+      (cons num (my-filter num-list odd?))))
+
+(same-parity 1 2 3 4 5 6 7)
+(same-parity 2 3 4 5 6 7)
+
+* Exercise 2.21
+(define (square-list-old items)
+  (if (null? items)
+      '()
+      (cons (square (car items))
+            (square-list-old (cdr items)))))
+
+(square-list-old (list 1 2 3 4))
+
+(define (square-list items)
+  (map (lambda (x) (square x))
+       items))
+
+(square-list (list 1 2 3 4))
+
+;;correct
+
+* Exercise 2.22
+;; Louis Reasoner's version
+(define (square-list-iter items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (cons (square (car things))
+                    answer))))
+  (iter items '()))
+
+(square-list-iter (list 1 2 3 4))
+
+(define (square-list-iter-fixed items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (append answer
+                      (list (square (car things)))))))
+  (iter items '()))
+
+(square-list-iter-fixed (list 1 2 3 4))
+
+;;correct
+
+* Exercise 2.23
+(define (my-for-each proc l)
+  (if (null? l)
+      null
+      ((proc (car l))
+       (my-for-each proc (cdr l)))))
+
+(for-each (lambda (x) (newline) (display x))
+          (list 57 321 88))
+
+;; Correct
+
+* Hierarchical structures
+(define x (cons (list 1 2) (list 3 4)))
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+* Exercise 2.24
+(1 (2 (3 4)))
+
+All correct. diagrams in notebook.
+
+* Exercise 2.25
+(car (cdr (car (cdr (cdr (list 1 3 (list 5 7 9)))))))
+
+(car (car (list (list 7))))
+
+(car (cdr (cdr (cdr (cdr (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))))))
+
+(car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7))))))))))))))))))
+
+;; Correct
+
+* Exercise 2.26
+(define x (list 1 2 3))
+(define y (list 4 5 6))
+
+(append x y)
+(1 2 3 4 5 6)
+
+(cons x y)
+((1 2 3) 4 5 6)
+
+(list x y)
+((1 2 3) (4 5 6))
+
+;; All correct
+
+* Exercise 2.27
+(define x (list (list 1 2) (list 3 4)))
+(define y (list (list 1 2 (list 3 4)) (list 5 6)))
+
+(define (deep-reverse items)
+  (cond 
+        ((pair? items) (append (reverse (cdr items))
+                               (list (reverse (car items)))))
+        (else items)))
+
+(deep-reverse x)
+(deep-reverse y)
+
+* Exercise 2.28
+(define x (list (list 1 2) 3 4))
+x
+
+(define (fringe items)
+  (cond ((pair? items)
+         (append (fringe (car items))
+                 (fringe (cdr items))))
+        ((not (null? items))
+         (list items))
+        (else '())))
+
+(fringe (list x x (list 9 8 7)))
+
+;; Correct
+
+* Exercise 2.29
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+a:
+
+(define (left-branch mobile)
+  (car mobile))
+
+(define (right-branch mobile)
+  (car (cdr mobile)))
+
+(define (branch-length branch)
+  (car branch))
+
+(define (branch-structure branch)
+  (car (cdr branch)))
+
+(define x (make-branch 2 3 ))
+
+(define y (make-branch 4 3))
+
+(define xy (make-mobile x y))
+
+(define yy (make-branch 3 y))
+
+(define symmetrical-mobile (make-mobile (make-branch 2
+                                                     (make-mobile (make-branch 2 3)
+                                                                  (make-branch 2 3)))
+                                        (make-branch 2
+                                                     (make-mobile (make-branch 2 3)
+                                                                  (make-branch 2 3)))))
+
+(define test-mobile (make-mobile (make-branch 3 symmetrical-mobile)
+                                 (make-branch 4
+                                              (make-mobile (make-branch 4 5)
+                                                           (make-branch 6 symmetrical-mobile)))))
+test-mobile
+
+b:
+
+(define (branch-weight branch)
+  (if (pair? (branch-structure branch))
+      (total-weight (branch-structure branch))
+      (branch-structure branch)))
+
+(define (total-weight mobile)
+  (+ (branch-weight (left-branch mobile))
+     (branch-weight (right-branch mobile))))
+
+(total-weight symmetrical-mobile)
+(total-weight test-mobile)
+
+c:
+(define (torque branch)
+  (* (branch-length branch)
+     (branch-weight branch)))
+
+(define (balanced? mobile)
+  (if (not (pair? mobile))
+      #t
+      (and (eq? (torque (left-branch mobile))
+                (torque (right-branch mobile)))
+           (balanced? (branch-structure (left-branch mobile)))
+           (balanced? (branch-structure (right-branch mobile))))))
+
+(balanced? symmetrical-mobile)
+(balanced? test-mobile)
+(balanced? (make-mobile (make-branch 2 3) (make-branch 2 3)))
+(balanced? (make-mobile (make-branch 2 3) (make-branch 4 5)))
+(balanced? (make-mobile (make-branch 10 (make-mobile (make-branch 2 3) (make-branch 2 3))) (make-branch 12 5)))
+
+;; Bill the lizard had a similar but slightly neater solution.
+
+d:
+Suppose we change the representation to:
+(define (make-mobile left right)
+  (cons left right))
+(define (make-branch length structure)
+  (cons length structure))
+
+We'd need to change two selectors:
+(define (right-branch mobile)
+  (cdr mobile))
+
+(define (branch-structure branch)
+  (car branch))
+
+;; Correct
+
+* Exercise 2.30
+(define (square-tree tree)
+  (cond ((null? tree) '())
+        ((not (pair? tree)) (square tree))
+        (else (cons (square-tree (car tree))
+                    (square-tree (cdr tree))))))
+
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (square sub-tree)))
+       tree))
+
+;; Correct
+
+* Exercise 2.31
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (tree-map proc sub-tree)
+             (proc sub-tree)))
+       tree))
+
+(define (square-tree tree) (tree-map square tree))
+
+(square-tree
+ (list 1 (list 2 (list 3 4) 5) (list 6 7)))
+
+* Exercise 2.32
+(define (subsets s)
+  (if (null? s)
+      (list '())
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda (subset)
+                            (append (list (car s)) subset))
+                          rest)))))
+
+(subsets (list 1 2 3))
+
+;; Correct, although could do (cons (car s) subset) instead of
+;; (append (list (car s)) subset)
+
+* Exercise 2.33
+(define (accumulate operator initial sequence)
+  (if (null? sequence)
+      initial
+      (operator (car sequence)
+                (accumulate operator initial (cdr sequence)))))
+
+(define (map p sequence)
+  (accumulate (lambda (current rest) (cons (p current) rest)) '() sequence))
+;; Correct
+
+(map square (list 1 2 3 4))
+
+(define (append seq1 seq2)
+  (accumulate cons seq2 seq1))
+;; Correct
+
+(append (list 1 2 3) (list 4 5 6))
+
+(define (length sequence)
+  (accumulate (lambda (current rest) (+ 1 rest)) 0 sequence))
+;; Correct
+
+(length (list 1 2 3 4))
+
+* Exercise 2.34
+
+(define (accumulate op initial items)
+  (if (null? items)
+      initial
+      (op (car items) (accumulate op initial (cdr items)))))
+
+(accumulate + 1 '(1 2 3 4))
+
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms)
+                (+ this-coeff (* x higher-terms)))
+              0
+              coefficient-sequence))
+
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+(+ 1 (* 3 2) (* 5 8) (* 2 2 2 2 2))
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+;; Correct
+
+* Exercise 2.35
+
+;; Old count leaves:
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+(define x (cons (list 1 2) (list 3 4 (list 5 6))))
+(count-leaves x)
+
+;; Old, inferior solution. I redid it below
+;; Count leaves using accumulate
+(define (count-leaves t)
+  (accumulate + 0 (map (lambda (sub-tree)
+                         (cond ((null? sub-tree) 0)
+                               ((not (pair? sub-tree)) 1)
+                               (else (+ (count-leaves (car sub-tree))
+                                        (count-leaves (cdr sub-tree))))))
+                       t)))
+
+
+;; New, better method
+
+(define (new-count-leaves x)
+  (accumulate + 0
+              (map (lambda (sub-tree)
+                     (if (pair? sub-tree)
+                         (new-count-leaves sub-tree)
+                         1))
+                   x)))
+
+(new-count-leaves (list 1 2 3 (list 1 2) (list 3 4)))
+(new-count-leaves x)
+
+;; Bill the lizard used enumerate-tree from earlier. Using enumearate-tree
+;; is probably better as it splits
+;; the problem up.
+
+
+
+* Exercise 2.36
+;; New, better version
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      '()
+      (cons (accumulate op init (map (lambda (sequence)
+                                       (car sequence))
+                                     seqs))
+            (accumulate-n op init (map (lambda (sequence)
+                                         (cdr sequence))
+                                       seqs)))))
+
+(define s (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+(accumulate-n + 0 s)
+
+
+;; Old, worse version
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      '()
+      (cons (accumulate op init (map (lambda (sub-seq)
+                                       (car sub-seq))
+                                     seqs))
+            (accumulate-n op init (map (lambda (sub-seq)
+                                         (if (null? sub-seq)
+                                             '()
+                                             (cdr sub-seq)))
+                                       seqs)))))
+
+(define s (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+(accumulate-n + 0 s)
+
+;; Bill the lizard did the same except he realised that you can just pass caar and cdr into map:
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      null
+      (cons (accumulate op init (map car seqs))
+                         (accumulate-n op init (map cdr seqs)))))
+
+* Exercise 2.37
+(define m (list (list 1 2 3 4) (list 4 5 6 6) (list 6 7 8 9)))
+(define v (list 1 2 3 4))
+(define w (list 5 6 7 8))
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+(dot-product v w)
+
+(define (matrix-*-vector m v)
+  (map (lambda (row)
+         (dot-product row v))
+       m))
+
+(matrix-*-vector m v)
+
+(define (transpose mat)
+  (accumulate-n cons '() mat))
+
+(transpose m)
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (row)
+           (dot-product row )) m)))
+
+....;; Uncompleted
+
+
+* Exercise 2.38
+
+(define (fold-right operator initial sequence)
+  (if (null? sequence)
+      initial
+      (operator (car sequence)
+                (accumulate operator initial (cdr sequence)))))
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(fold-right / 1 (list 1 2 3))
+(/ 1 (/ 2 (/ 3 1)))
+3/2
+
+(fold-left / 1 (list 1 2 3))
+(/ (/ (/ 1 1) 2) 3)
+1/6
+
+(fold-right list '() (list 1 2 3))
+(list 1 (list 2 (list 3 '())))
+(1 (2 (3 ())))
+
+(fold-left list '() (list 1 2 3))
+(list (list (list '() 1) 2) 3)
+(((() 1) 2) 3)
+
+Property that op must have so that fold-left and fold-right have the same result:
+(eq? (op a b) (op b a))
+i.e. commutativity
+
+* Exercise 2.39
+
+(define (reverse sequence)
+  (fold-right (lambda (current remaining)
+                (append remaining (list current)))
+              '()
+              sequence))
+
+(reverse (list 1 2 3))
+
+(define (reverse sequence)
+  (fold-left (lambda (result current)
+               (cons current result))
+             '()
+             sequence))
+
+(reverse (list 1 2 3))
+
+* Nested mappings
+
+(define (accumulate op initial seq)
+  (if (null? seq)
+      initial
+      (op (car seq) (accumulate op initial (cdr seq)))))
+
+(accumulate + 0 (list 1 2 3 4 5))
+
+(define (flatmap proc seq)
+  (accumulate append '() (map proc seq)))
+
+(flatmap cdr (list (list 1 2 3) (list 4 5 6)))
+
+(map cdr (list (list 1 2 3) (list 4 5 6)))
+
+(define (enumerate-interval start end)
+  (if (> start end)
+      '()
+      (cons start (enumerate-interval (+ start 1) end))))
+
+(enumerate-interval 1 5)
+
+(map (lambda (i)
+       (map (lambda (j) (list i j))
+            (enumerate-interval 1 (- i 1))))
+     (enumerate-interval 1 5))
+
+
+* Exercise 2.40
+(define (unique-pairs n)
+  (flatmap (lambda (i)
+             (map (lambda (j) (list i j))
+                (enumerate-interval 1 (- i 1))))
+           (enumerate-interval 1 n)))
+
+(unique-pairs 3)
+
+;; Simplified prime sum squares
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+     (filter-prime-sum? (unique-pairs n))))
+
+(prime-sum-pairs 6)
+
+
+* Exercise 2.41
+(define (enumerate-triples n)
+  )
+
+* Exercise 2.42
+;; Constructors and selectors for positions
+(define (make-position row col)
+  (cons row col))
+
+(define (column position)
+  (cdr position))
+
+(define (row position)
+  (car position))
+
+;; Making and adding to the board 
+(define (adjoin-position row col positions)
+  (append (make-position row col) positions))
+
+(define empty-board '())
+
+;; Checking if positions are safe
+(define (position-in-last-column positions last-column)
+  (find (lambda (position)
+          (= (column position) last-column))
+        positions))
+
+(define (same-row current-position other-positions)
+  (find ))
+
+(define (safe? last-column-no positions)
+  
+  )
+
+(define (queens board-size)
+  (define (queen-cols no-of-columns)
+    (if (= no-of-columns 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? no-of-columns positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position new-row no-of-columns rest-of-queens))
+                 (enumerate-interval 1 board-size)))
+          (queen-cols (- no-of-columns 1))))))
+  (queen-cols board-size))
 
 * Timings
 10 hours 27th Oct - 2nd Nov
@@ -385,4 +1174,19 @@ Examples:
 10 hours minutes 10th Nov - 16th Nov
 1.5 hours 17th Nov -
 
+19th January:
+1 hour 20 minutes
 
+21st February
+8.5 hour
+
+23rd February
+0.5 hours
+
+3rd March
+4 hour
+
+
+---------
+Week beginning 16th March
+4 hr 0 mins

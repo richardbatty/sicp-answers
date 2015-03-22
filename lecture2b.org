@@ -1,0 +1,156 @@
+* So far
+Crucial idea so far is that we're building a layered system with
+abstraction boundaries so we can hide details.
+
+We divorce the task of builing things from the task of implementing
+the parts.
+
+We will now look at the same issues for data.
+
+Key idea is again that you build the system in layers and you build
+abstraction barriers that hide implementation details.
+
+* Arithmetic on rational numbers
+We know the math but when we go to implement it we realise we don't
+have a way to represent the rational numbers.
+
+Let's use he powerful design strategy of wishful thinking - that we
+already have the representation of the rationals and procedures that
+operate on them.
+
+i.e. assume that you have the functions you need.
+
+Then you can do:
+(define (+rat x y)
+  (make-rat
+   (+ (* (numer x) (denom y))
+      (* (numer y) (denom x)))
+   (* (denom x) (denom y))))
+
+So we've made our rational number addition assuming we have the functions we need.
+And we can do similarly for rational number multiplication.
+
+I assumed that i had a particular type of data object, a constructor for it
+(to make it), and selectors for it (to get stuff out of it).
+
+Why do we want to do this? Why don't we just make something that
+allows us to type in four numbers and it outputs two numbers (the
+resulting numerator and denominator?)
+
+Well what if you want to express the idea of adding two rationals and
+multiplying the result by the sum of two other rationals? With our
+funtions we can just do (*rat (+rat x y) (+rat s t)). So I can make an
+expression that looks like the math, i.e. it looks like the way I want
+to think about the problem. Without these abstractions I'd have to
+keep track of more and more stuff that should be hidden.
+
+Q: Why do you need the data structure if you're going to be outputting
+numerators and denominators at the end anyway?
+So we can use the rational as one unit and think about ot as one
+unit. Just like we want to package instructions up as a procedure.
+
+So we've thought about the problen in two pieces:
+1. Using constructors and selectors to do our arithmetic with
+2. Writing the constructors and selectors to actually represent our
+   rational.
+
+Let's do part 2 now.
+
+We need a glue for data objects that allow us to glue data together.
+
+We can make pairs. Cons is a primitive operator for making pairs.
+
+(cons x y) constructs a pair whose first part ix x and second part is
+y.
+
+We also have ways of getting things out of the pair: car and cdr.
+
+We also have a conventional way of drawing pictures of pairs: Box and
+pointer notation.
+
+So its now obvious how to make the rational numbers:
+
+(define (makerat n d)
+  (cons n d))
+
+(define (numer x)
+  (car x))
+
+(define (denom x)
+  (cdr x))
+
+One problem: if you use this system to add 1/2 + 3/4 you get 6/8.
+
+If we want to always represent a rational in its lowest terms then we
+need to modify makerat to do that.
+
+So we have a nice system
+
+But the important thing is:
+
++rat *rat -rat               <---------- use
+------------------------
+make-rat numer denom         <---------- Abstraction boundary: constructors and selectors
+-----------------------
+pairs                        <---------- representation
+
+
+
+This is called data abstraction: isolating use from representation by setting up constructors and selectors.
+
+We could define +rat without data abstraction by just using car and cdr. Why don't we do it this way?
+It avoids all the dfining of various functions.
+
+But one of the most important principles of both software and sorcry is that I have power over something
+if I can name it. In a system that doesn't use bstraction there is nothing that I can point at that is
+a rational number. There is no idea of rational number as a conceptual entity
+
+why would we want this conceptual entity?
+- We might want an alternative representation of the rationals.
+- We might not able to decide. We want to avoid making up our mind on how to do something.
+you want to make progress without being bound by your decisions. We can design by wishful thinking using
+names for parts of the system we haven't implemented yet. That way we put off making implementation
+decisions untill later.
+
+Q: What does this do to the idea that you should design everything up front?
+A: That maxim must be from someone who hasn't built large systems. 
+
+* Building big things
+We care about building more complex systems than the rational number arithmetic.
+
+If we were building a system to manipulate lines then you could do something like:
+
+SEGMENTS
+
+-----------------------
+make-seg, seg-start, seg-end
+-----------------------
+
+VECTORS
+
+-----------------------
+mak-vector, xcor, ycor
+-----------------------
+
+PAIRS
+
+
+And you can see the layers here.
+
+Notice that to represent the segment we use a pair of vectors and a vector is a pair off
+numbers. So we almost took it for granted thaat cons can put things together, including things
+that have been created by cons. This is CLOSURE - a means of combination can be used to combine
+things that have been created by thet means of combination.
+
+One of your tests of the quality of a means of combination should be whether it has the CLOSURE
+property.
+
+
+(define (cons a b)
+  (lambda (pick)
+    (cond ((= pick 1) a)
+          ((= pick 2) b))))
+
+(define (car x) (x 1))
+
+(define (cdr x) (x 2))
