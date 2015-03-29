@@ -1125,6 +1125,20 @@ i.e. commutativity
   )
 
 * Exercise 2.42
+;; Utils
+(define (accumulate op initial seq)
+  (if (null? seq)
+      initial
+      (op (car seq) (accumulate op initial (cdr seq)))))
+
+(define (flatmap proc seq)
+  (fold-right append '() (map proc seq)))
+
+(define (enumerate-interval start end)
+  (if (> start end)
+      '()
+      (cons start (enumerate-interval (+ start 1) end))))
+
 ;; Constructors and selectors for positions
 (define (make-position row col)
   (cons row col))
@@ -1136,10 +1150,10 @@ i.e. commutativity
   (car position))
 
 ;; Making and adding to the board 
-(define (adjoin-position row col positions)
-  (append (make-position row col) positions))
-
 (define empty-board '())
+
+(define (adjoin-position row col positions)
+  (append positions (list (make-position row col))))
 
 ;; Checking if positions are safe
 (define (position-in-last-column positions last-column)
@@ -1147,26 +1161,62 @@ i.e. commutativity
           (= (column position) last-column))
         positions))
 
+(define (positions-excluding-column positions column-to-exclude)
+  (filter (lambda (position)
+            (not (= (column position) column-to-exclude)))
+            positions))
+
 (define (same-row current-position other-positions)
-  (find ))
+  (find (lambda (position)
+          (= (row current-position) (row position)))
+        other-positions))
 
-(define (safe? last-column-no positions)
-  
-  )
+(define (same-diagonal current-position other-positions)
+  (find (lambda (position)
+          (= (abs (- (row current-position) (row position)))
+             (abs (- (column current-position) (column position)))))
+        other-positions))
 
+(define (safe? column-no positions)
+  (if (= (length positions) 1)
+      true
+      (not (or (same-row (position-in-last-column positions column-no) (positions-excluding-column positions column-no))
+               (same-diagonal (position-in-last-column positions column-no) (positions-excluding-column positions column-no))))))
+
+;; Main function
 (define (queens board-size)
-  (define (queen-cols no-of-columns)
-    (if (= no-of-columns 0)
+  (define (queen-cols k)
+    (if (= k 0)
         (list empty-board)
         (filter
-         (lambda (positions) (safe? no-of-columns positions))
+         (lambda (positions) (safe? k positions))
          (flatmap
           (lambda (rest-of-queens)
             (map (lambda (new-row)
-                   (adjoin-position new-row no-of-columns rest-of-queens))
+                   (adjoin-position new-row k rest-of-queens))
                  (enumerate-interval 1 board-size)))
-          (queen-cols (- no-of-columns 1))))))
+          (queen-cols (- k 1))))))
   (queen-cols board-size))
+
+(queens 4)
+
+* Attempted refactoring of Exercise 2.42
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position new-row k rest-of-queens))
+                 (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+(queens 4)
 
 * Timings
 10 hours 27th Oct - 2nd Nov
@@ -1190,3 +1240,7 @@ i.e. commutativity
 ---------
 Week beginning 16th March
 4 hr 0 mins
+
+---------
+Week beginning 23rd March
+9 hour 0 minutes
