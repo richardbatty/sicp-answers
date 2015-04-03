@@ -1180,8 +1180,10 @@ i.e. commutativity
 (define (safe? column-no positions)
   (if (= (length positions) 1)
       true
-      (not (or (same-row (position-in-last-column positions column-no) (positions-excluding-column positions column-no))
-               (same-diagonal (position-in-last-column positions column-no) (positions-excluding-column positions column-no))))))
+      (not (or (same-row (position-in-last-column positions column-no)
+                         (positions-excluding-column positions column-no))
+               (same-diagonal (position-in-last-column positions column-no)
+                              (positions-excluding-column positions column-no))))))
 
 ;; Main function
 (define (queens board-size)
@@ -1198,25 +1200,12 @@ i.e. commutativity
           (queen-cols (- k 1))))))
   (queen-cols board-size))
 
-(queens 4)
+(queens 6)
 
-* Attempted refactoring of Exercise 2.42
+* Exercise 2.43
+;; Skipped
 
-(define (queens board-size)
-  (define (queen-cols k)
-    (if (= k 0)
-        (list empty-board)
-        (filter
-         (lambda (positions) (safe? k positions))
-         (flatmap
-          (lambda (rest-of-queens)
-            (map (lambda (new-row)
-                   (adjoin-position new-row k rest-of-queens))
-                 (enumerate-interval 1 board-size)))
-          (queen-cols (- k 1))))))
-  (queen-cols board-size))
 
-(queens 4)
 
 * Timings
 10 hours 27th Oct - 2nd Nov
@@ -1244,3 +1233,8 @@ Week beginning 16th March
 ---------
 Week beginning 23rd March
 11 hour 0 minutes
+
+
+---------
+Week beginning Monday 30th March
+3 hour 0 minutes
